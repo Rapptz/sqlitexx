@@ -1,0 +1,6 @@
+# binaries
+*.exe
+*.dll
+*.a
+
+*.sublime-*
