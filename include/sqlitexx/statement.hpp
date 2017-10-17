@@ -189,7 +189,7 @@ struct statement_range {
 
 struct statement {
     template<typename T>
-    void bind_to(int index, T&& value) {
+    void bind_to(int index, T&& value) const {
         int ret = meta::bind_traits<meta::unqualified_t<T>>::bind(_ptr.get(), index, std::forward<T>(value));
         if(ret != SQLITE_OK) {
             throw error(ret);
@@ -197,7 +197,7 @@ struct statement {
     }
 
     template<typename String, typename T>
-    void bind_to(const String& name, T&& value) {
+    void bind_to(const String& name, T&& value) const {
         int index = sqlite3_bind_parameter_index(_ptr.get(), meta::string_traits<String>::c_str(name));
         if(index == 0) {
             // not found so bail
@@ -208,7 +208,7 @@ struct statement {
     }
 
     template<typename... Args>
-    void bind(Args&&... args) {
+    void bind(Args&&... args) const {
         bind_impl(meta::and_<is_named_parameter<meta::unqualified_t<Args>>...>{}, std::forward<Args>(args)...);
     }
 
@@ -227,7 +227,7 @@ struct statement {
         }
     }
 
-    void execute() {
+    void execute() const {
         int ret = sqlite3_step(_ptr.get());
         if(ret != SQLITE_DONE && ret != SQLITE_ROW) {
             throw error(ret);
@@ -236,7 +236,7 @@ struct statement {
     }
 
     template<typename... Args>
-    void execute(Args&&... args) {
+    void execute(Args&&... args) const {
         bind(std::forward<Args>(args)...);
         int ret = sqlite3_step(_ptr.get());
         if(ret != SQLITE_DONE && ret != SQLITE_ROW) {
@@ -256,13 +256,13 @@ private:
     friend struct connection;
 
     template<typename... Args>
-    void bind_impl(std::true_type, Args&&... args) {
+    void bind_impl(std::true_type, Args&&... args) const {
         using dummy = int[];
         (void)dummy{ (bind_to(std::forward<Args>(args).name(), std::forward<Args>(args).get()), 0)... };
     }
 
     template<typename... Args>
-    void bind_impl(std::false_type, Args&&... args) {
+    void bind_impl(std::false_type, Args&&... args) const {
         bind_parameters(std::index_sequence_for<Args...>{}, std::forward<Args>(args)...);
     }
 
@@ -285,7 +285,7 @@ private:
     };
 
     template<typename... Args, size_t... I>
-    void bind_parameters(std::index_sequence<I...>, Args&&... args) {
+    void bind_parameters(std::index_sequence<I...>, Args&&... args) const {
         using dummy = int[]; // expand helper
         (void)dummy{ (bind_to(static_cast<int>(I + 1), std::forward<Args>(args)), 0)... };
     }
