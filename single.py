@@ -35,7 +35,7 @@ intro = """// The MIT License (MIT)
 
 // This file was generated with a script.
 // Generated {time} UTC
-// This header is part of {project} {version} (revision {revision})
+// This header is part of {project} (revision {revision})
 // {repository}
 
 #ifndef {guard}
@@ -51,14 +51,14 @@ class SingleFileGenerator(object):
         self.include = re.compile('#include <{0}/(.*?)>'.format(project))
         self.fp = sstream.StringIO()
         self.include_guard = project.upper() + '_SINGLE_INCLUDE_HPP'
-        revision, version = self.get_revision(), self.get_version()
+        revision, version = self.get_revision(), None
 
         self.fp.write(intro.format(time=dt.datetime.utcnow(), project=project, repository=repository,
                                    revision=revision, version=version, guard=self.include_guard))
 
         if not config.quiet:
             print('Creating single header for project {}.'.format(project))
-            print('Current version: {version} (revision {revision})\n'.format(version=version, revision=revision))
+            print('Current revision: {revision}\n'.format(revision=revision))
 
 
     def is_include_guard(self, line):
