@@ -30,6 +30,55 @@
 #include <sqlite3.h>
 
 namespace sqlite {
+struct transaction {
+    template<typename Connection>
+    transaction(const Connection& con): _commit(con.prepare("COMMIT;")), _rollback(con.prepare("ROLLBACK;")) {
+        con.execute("BEGIN TRANSACTION;");
+    }
+
+    transaction(const transaction&) = delete;
+    transaction& operator=(const transaction&) = delete;
+
+    transaction(transaction&& o) noexcept:
+        _commit(std::move(o._commit)),
+        _rollback(std::move(o._rollback)),
+        needs_rollback(o.needs_rollback) {
+        o.needs_rollback = false;
+    }
+
+    transaction& operator=(transaction&& o) noexcept {
+        needs_rollback = o.needs_rollback;
+        _commit = std::move(o._commit);
+        _rollback = std::move(o._rollback);
+        o.needs_rollback = false;
+        return *this;
+    }
+
+    ~transaction() noexcept(false) {
+        if(needs_rollback) {
+            rollback();
+        }
+    }
+
+    void commit() {
+        if(needs_rollback) {
+            _commit.execute();
+            needs_rollback = false;
+        }
+    }
+
+    void rollback() {
+        if(needs_rollback) {
+            _rollback.execute();
+            needs_rollback = false;
+        }
+    }
+private:
+    statement _commit;
+    statement _rollback;
+    bool needs_rollback = true;
+};
+
 struct connection {
     enum open_mode : int {
         read_only     = SQLITE_OPEN_READONLY,
@@ -103,6 +152,10 @@ struct connection {
     template<typename String>
     auto fetch(const String& query) const {
         return prepare(query).fetch();
+    }
+
+    transaction transaction() const {
+        return { *this };
     }
 private:
     struct deleter {
