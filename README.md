@@ -12,7 +12,7 @@ Of note:
 
 - GCC 5.1+
 - Clang 3.4+
-- MSVC 2015 or higher
+- MSVC 2017 15.3 or higher
 
 I have only tested this on GCC 7.0.
 
