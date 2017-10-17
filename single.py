@@ -151,14 +151,9 @@ class SingleFileGenerator(object):
 
 
 def main():
-    description = "Converts a gears module to a single file for convenience."
-    epilogue = """To get a list of modules, run ".{sep}single.py list". To receive a
-    sub-module you could use a period to delimit the sub-module. For example, to get maybe
-    from the utility module you would run ".{sep}single.py utility.maybe"
-    """.format(sep=os.sep)
-
+    description = "Converts the project to a single file for convenience."
     # command line parser
-    parser = argparse.ArgumentParser(usage='%(prog)s [options...] module', description=description, epilog=epilogue)
+    parser = argparse.ArgumentParser(usage='%(prog)s [options...] module', description=description)
     # parser.add_argument('module', help='module to convert to single file', metavar='module')
     parser.add_argument('--output', '-o', help='output directory to place file in', metavar='dir')
     parser.add_argument('--quiet', help='suppress all output', action='store_true')
