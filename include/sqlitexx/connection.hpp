@@ -142,16 +142,16 @@ struct connection {
         return { db.get(), sql };
     }
 
-    template<typename String, typename... Args>
-    auto fetch(const String& query, Args&&... args) const {
+    template<typename... Args, typename String, typename... Binding>
+    auto fetch(const String& query, Binding&&... binds) const {
         auto stmt = prepare(query);
-        stmt.bind(std::forward<Args>(args)...);
-        return std::move(stmt).fetch();
+        stmt.bind(std::forward<Binding>(binds)...);
+        return std::move(stmt).template fetch<Args...>();
     }
 
-    template<typename String>
+    template<typename... Args, typename String>
     auto fetch(const String& query) const {
-        return prepare(query).fetch();
+        return prepare(query).template fetch<Args...>();
     }
 
     transaction transaction() const {

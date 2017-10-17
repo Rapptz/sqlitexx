@@ -25,6 +25,7 @@
 #include <string>
 #include <cstddef>
 #include <type_traits>
+#include <utility>
 #include <sqlite3.h>
 
 namespace sqlite {
@@ -43,6 +44,40 @@ struct select_overload : rank<0> {};
 struct otherwise {
     otherwise(...) {}
 };
+
+constexpr auto pow(size_t a, size_t b) noexcept {
+    size_t v = 1;
+    for(size_t i = 0; i < b; ++i) {
+        v *= a;
+    }
+    return v;
+}
+
+template<typename T, size_t N>
+constexpr auto sum(const T(&arr)[N]) {
+    T value = 0;
+    for(size_t i = 0; i < N; ++i) {
+        value += arr[i];
+    }
+    return value;
+}
+
+template<char C, size_t E>
+constexpr auto convert() {
+    return C <= '9' && C >= '0' ? (C - '0') * pow(10, E) : throw "bad number";
+}
+
+template<char... I, size_t... N>
+constexpr auto to_digit(std::index_sequence<N...>) noexcept {
+    size_t please_work[] = { convert<I, (sizeof...(I) - 1) - N>()... };
+    return sum(please_work);
+}
+
+template<char... I>
+constexpr auto to_digit() noexcept {
+    return to_digit<I...>(std::make_index_sequence<sizeof...(I)>{});
+}
+
 
 namespace detail {
 template<typename T>
@@ -256,4 +291,11 @@ struct column_traits<std::basic_string<char16_t, Args...>> {
     }
 };
 } // meta
+
+inline namespace literals {
+template<char... Integers>
+constexpr auto operator"" _c() noexcept {
+    return std::integral_constant<size_t, ::sqlite::meta::to_digit<Integers...>()>{};
+}
+} // literals
 } // sqlite

@@ -24,6 +24,7 @@
 
 #include <sqlitexx/type_traits.hpp>
 #include <sqlitexx/error.hpp>
+#include <sqlitexx/column.hpp>
 #include <sqlite3.h>
 #include <iterator>
 #include <memory>
@@ -74,33 +75,13 @@ struct column_traits<blob> {
 };
 } // meta
 
-struct column {
-    column(sqlite3_stmt* ptr) noexcept: ptr(ptr) {}
-
-    sqlite3_stmt* data() const noexcept { return ptr; }
-
-    const char* name(int index) const noexcept {
-        return sqlite3_column_name(ptr, index);
-    }
-
-    int count() const noexcept {
-        return sqlite3_column_count(ptr);
-    }
-
-    template<typename T>
-    T get(int index) const {
-        return meta::column_traits<meta::unqualified_t<T>>::convert(ptr, index);
-    }
-private:
-    sqlite3_stmt* ptr;
-};
-
 namespace detail {
 struct end_tag {};
 
+template<typename... Args>
 struct statement_iterator {
     using difference_type = std::ptrdiff_t;
-    using value_type = column;
+    using value_type = column<Args...>;
     using reference = value_type&;
     using pointer = value_type*;
     using iterator_category = std::input_iterator_tag;
@@ -164,9 +145,9 @@ private:
     }
 };
 
-template<typename Pointer>
+template<typename Pointer, typename... Args>
 struct statement_range {
-    using iterator = statement_iterator;
+    using iterator = statement_iterator<Args...>;
     Pointer _ptr;
 
     iterator begin() const {
@@ -245,12 +226,14 @@ struct statement {
         reset();
     }
 
+    template<typename... Args>
     auto fetch() const& {
-        return detail::statement_range<const decltype(_ptr)&>{_ptr};
+        return detail::statement_range<const decltype(_ptr)&, Args...>{_ptr};
     }
 
+    template<typename... Args>
     auto fetch() && {
-        return detail::statement_range<decltype(_ptr)>{std::move(_ptr)};
+        return detail::statement_range<decltype(_ptr), Args...>{std::move(_ptr)};
     }
 private:
     friend struct connection;
